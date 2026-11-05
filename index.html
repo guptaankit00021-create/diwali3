@@ -1,0 +1,274 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grand Diwali Fireworks Show</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  overflow:hidden;
+  background:radial-gradient(ellipse at bottom,#17133b,#02020c 75%);
+  font-family:Arial,sans-serif;
+  color:white;
+}
+
+canvas{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+}
+
+.content{
+  position:absolute;
+  z-index:2;
+  top:5%;
+  width:100%;
+  text-align:center;
+  padding:10px;
+  pointer-events:none;
+}
+
+.logo{
+  width:min(270px,70vw);
+  max-height:85px;
+  object-fit:contain;
+  background:white;
+  padding:7px;
+  border-radius:10px;
+}
+
+h2{
+  margin-top:10px;
+  color:#fff;
+  text-shadow:0 0 15px cyan;
+}
+
+h1{
+  margin-top:35px;
+  font-size:clamp(38px,9vw,90px);
+  color:#fff;
+  text-shadow:0 0 15px #ff00ff,
+              0 0 35px #00ccff,
+              0 0 65px #ff4500;
+  animation:zoom 2s infinite alternate;
+}
+
+@keyframes zoom{
+  from{transform:scale(.97)}
+  to{transform:scale(1.04)}
+}
+
+.department{
+  color:#70faff;
+  font-size:clamp(14px,3vw,22px);
+  margin-top:12px;
+  text-shadow:0 0 15px cyan;
+}
+
+.message{
+  margin-top:15px;
+  font-size:clamp(14px,3vw,21px);
+}
+
+.bottom{
+  position:absolute;
+  bottom:5%;
+  width:100%;
+  text-align:center;
+  z-index:2;
+  font-size:clamp(35px,7vw,65px);
+  filter:drop-shadow(0 0 15px orange);
+  animation:zoom 1s infinite alternate;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="screen"></canvas>
+
+<div class="content">
+  <img class="logo" src="shobhit-logo.jpg.jpeg"
+       alt="Shobhit University Logo">
+
+  <h2>SHOBHIT UNIVERSITY</h2>
+
+  <h1>HAPPY DIWALI</h1>
+
+  <div class="department">
+    School of Computational Sciences and Engineering
+  </div>
+
+  <div class="message">
+    Celebrate the Festival of Lights!
+  </div>
+</div>
+
+<div class="bottom">🪔 ✨ 🪔 ✨ 🪔</div>
+
+<script>
+const canvas=document.getElementById("screen");
+const ctx=canvas.getContext("2d");
+
+function resize(){
+  canvas.width=innerWidth;
+  canvas.height=innerHeight;
+}
+resize();
+addEventListener("resize",resize);
+
+let particles=[];
+let rockets=[];
+
+const colors=[
+  "#ff004c","#00ffff","#ffff00",
+  "#ff8800","#ff00ff","#ffffff","#00ff66"
+];
+
+function launchRocket(){
+  const x=Math.random()*canvas.width;
+  rockets.push({
+    x,
+    y:canvas.height,
+    target:Math.random()*canvas.height*.55,
+    color:colors[Math.floor(Math.random()*colors.length)],
+    speed:Math.random()*5+7
+  });
+}
+
+function explode(x,y,color){
+  for(let i=0;i<110;i++){
+    const angle=Math.random()*Math.PI*2;
+    const speed=Math.random()*6+1;
+
+    particles.push({
+      x,y,
+      vx:Math.cos(angle)*speed,
+      vy:Math.sin(angle)*speed,
+      life:Math.random()*70+35,
+      color,
+      size:Math.random()*3+1
+    });
+  }
+}
+
+function fountain(){
+  const x=canvas.width/2;
+  const y=canvas.height-20;
+
+  for(let i=0;i<7;i++){
+    particles.push({
+      x:x+(Math.random()-.5)*18,
+      y,
+      vx:(Math.random()-.5)*5,
+      vy:-Math.random()*12-3,
+      life:Math.random()*50+20,
+      color:colors[Math.floor(Math.random()*colors.length)],
+      size:Math.random()*3+1
+    });
+  }
+}
+
+function animate(){
+  ctx.fillStyle="rgba(2,2,12,.22)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // Rockets
+  rockets.forEach((r,i)=>{
+    r.y-=r.speed;
+
+    ctx.fillStyle=r.color;
+    ctx.shadowBlur=15;
+    ctx.shadowColor=r.color;
+    ctx.beginPath();
+    ctx.arc(r.x,r.y,4,0,Math.PI*2);
+    ctx.fill();
+
+    if(r.y<=r.target){
+      explode(r.x,r.y,r.color);
+      rockets.splice(i,1);
+    }
+  });
+
+  // Particles
+  particles.forEach((p,i)=>{
+    p.x+=p.vx;
+    p.y+=p.vy;
+    p.vy+=.055;
+    p.vx*=.99;
+    p.life--;
+
+    ctx.globalAlpha=Math.max(0,p.life/90);
+    ctx.fillStyle=p.color;
+    ctx.shadowBlur=14;
+    ctx.shadowColor=p.color;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+    ctx.fill();
+
+    if(p.life<=0)particles.splice(i,1);
+  });
+
+  ctx.globalAlpha=1;
+  ctx.shadowBlur=0;
+
+  fountain();
+  requestAnimationFrame(animate);
+}
+
+animate();
+
+setInterval(launchRocket,550);
+
+// Sound effects after first user interaction
+let audioCtx;
+let soundStarted=false;
+
+function startSound(){
+  if(soundStarted)return;
+  soundStarted=true;
+
+  audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+
+  function fireSound(){
+    if(!audioCtx)return;
+
+    const duration=.3;
+    const buffer=audioCtx.createBuffer(
+      1,audioCtx.sampleRate*duration,audioCtx.sampleRate
+    );
+
+    const data=buffer.getChannelData(0);
+
+    for(let i=0;i<data.length;i++){
+      data[i]=(Math.random()*2-1)*(1-i/data.length);
+    }
+
+    const source=audioCtx.createBufferSource();
+    const gain=audioCtx.createGain();
+
+    source.buffer=buffer;
+    gain.gain.setValueAtTime(.22,audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(
+      .001,audioCtx.currentTime+duration
+    );
+
+    source.connect(gain);
+    gain.connect(audioCtx.destination);
+    source.start();
+  }
+
+  setInterval(fireSound,650);
+}
+
+addEventListener("pointerdown",startSound,{once:true});
+addEventListener("keydown",startSound,{once:true});
+</script>
+
+</body>
+</html>
